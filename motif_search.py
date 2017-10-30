@@ -4,36 +4,59 @@
 import subprocess
 import sys
 import Bio.Seq
+import argparse
 
 from Bio import motifs
 from Bio import SeqIO
 from Bio.Seq import Seq
 
+parser = argparse.ArgumentParser(description="FastafromBed & Motif search")
+
+parser.add_argument("-f", "--fastagenome",
+					help="fasta genome", required=True)
+parser.add_argument("-b", "--bed",
+					help="bedfile", required=True)
+parser.add_argument("-o", "--fastaoutput",
+					help="output from fastaFromBed in FASTA format", required=True)
+parser.add_argument("-m", "--motifoutput",
+					help="output from motif search", required=True)	
+parser.add_argument("-s", "--motifsequence",
+					help="motif sequence", required=True)	
+
+
+
+args=parser.parse_args()
+
 file1 = sys.argv[1] #fasta file
 file2 = sys.argv[2] #bed file
 
-output = subprocess.run(['fastaFromBed', '-fi', file1, '-bed', file2], stdout=subprocess.PIPE )
+fasta_write = open(args.fastaoutput, "w")
+
+output = subprocess.run(['fastaFromBed', '-fi', args.fastagenome, '-bed', args.bed], stdout=subprocess.PIPE )
 bytes = output.stdout
 stdout=bytes.decode('utf-8')
 #print(stdout)
 
-fasta_write = open ("TAIR_fasta_output", "w")
 fasta_write.write(stdout)
 fasta_write.close()
 
-#fasta_frombed = open ("TAIR_fasta_output", "r")
-
-instances = [Seq("TACAA")]
+outputfile = open(args.motifoutput, "w")
+ 
+instances = [Seq(args.motifsequence)]	
 m=motifs.create(instances)
-
-myfile= "TAIR_fasta_output"
+myfile= args.fastaoutput
 
 for line in SeqIO.parse(myfile, "fasta"):
-	#print(str(line.seq))
-	motif=Seq(str(line.seq))
-	for pos in m.instances.search(motif):
-		print(line.id, pos[0])
-	
+ 	#print(str(line.seq))
+ 	motif=Seq(str(line.seq))
+ 	for pos in m.instances.search(motif):
+ 		print(line.id, pos[0])
+ 		outputfile.write("{0}\t{1}\n".format(line.id, pos[0]))
+ 	
+outputfile.close()
+
+
+
 # 	test_seq=Seq(line, m.alphabet)
 # 	# 
 # instances = [Seq("TACAA"), Seq("AATGC")]
